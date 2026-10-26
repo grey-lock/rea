@@ -1,13 +1,13 @@
 name: CI
 
+# Personal fork policy: run on changes and request, without recurring schedules.
+# Timing and mutation workflows remain manual; release entry jobs require morluto/rea.
+
 on:
   push:
     branches: [main]
   pull_request:
     branches: [main, "release/*"]
-  schedule:
-    - cron: "23 0-2,4-23 * * *"
-    - cron: "23 3 * * *"
   workflow_dispatch:
   workflow_call:
     inputs:
