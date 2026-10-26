@@ -508,7 +508,7 @@ it("keeps fast feedback separate from complete qualification and release proof",
   expect(ci.concurrency.group).toContain("inputs.source_sha ||");
   expect(ci.concurrency.group).toContain("github.ref");
   expect(ci.concurrency["cancel-in-progress"]).toBe(
-    "${{ github.event_name == 'pull_request' && inputs.source_sha == '' && !contains(github.event.pull_request.labels.*.name, 'ci:full') }}",
+    "${{ inputs.source_sha == '' && ((github.event_name == 'push' && github.repository != 'morluto/rea') || (github.event_name == 'pull_request' && !contains(github.event.pull_request.labels.*.name, 'ci:full'))) }}",
   );
   // Failed dependencies still reach the gate, but superseded PR runs must
   // release their concurrency slot without waiting for another runner.

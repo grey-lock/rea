@@ -30,11 +30,11 @@ permissions:
 
 concurrency:
   # Complete qualification finishes even while main receives more pushes.
-  # Main feedback also finishes, coalescing newer pushes to one pending run.
+  # Personal fork pushes supersede obsolete feedback; canonical main feedback finishes.
   # Scheduled/manual main runs coalesce to one active and the latest pending;
   # release and label-triggered qualification use exact-revision groups.
   group: ci-${{ (github.event_name == 'schedule' || github.event_name == 'workflow_dispatch' || inputs.source_sha != '' || contains(github.event.pull_request.labels.*.name, 'ci:full')) && 'qualification' || 'feedback' }}-${{ inputs.source_sha || github.event.pull_request.number || github.ref }}
-  cancel-in-progress: ${{ github.event_name == 'pull_request' && inputs.source_sha == '' && !contains(github.event.pull_request.labels.*.name, 'ci:full') }}
+  cancel-in-progress: ${{ inputs.source_sha == '' && ((github.event_name == 'push' && github.repository != 'morluto/rea') || (github.event_name == 'pull_request' && !contains(github.event.pull_request.labels.*.name, 'ci:full'))) }}
 
 env:
   HUSKY: "0"
