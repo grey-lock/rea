@@ -8,6 +8,7 @@ import { err } from "../domain/result.js";
 import { scriptScenarioFixture } from "../../tests/fixtures/webScriptCapture.js";
 import type { BrowserScenarioCapturePort } from "./BrowserScenarioCapturePort.js";
 import { captureBrowserScenario } from "./BrowserScenarioCaptureService.js";
+import { browserScenarioCaptureSchema } from "../domain/browserScenarioCapture.js";
 
 const scenario = browserScenarioInputSchema.parse({
   browser: { mode: "launch", executable_path: "/fixture/chrome" },
@@ -15,6 +16,40 @@ const scenario = browserScenarioInputSchema.parse({
   actions: [{ step_id: "settle", action: "wait_for_timeout", duration_ms: 1 }],
 });
 const capture = scriptScenarioFixture();
+
+it("retains an interrupted scenario as a typed partial capture", async () => {
+  const completeness = {
+    status: "incomplete",
+    equality_eligible: false,
+    missing_sections: ["action"],
+    truncated_sections: [],
+  };
+  const partialCapture = browserScenarioCaptureSchema.parse({
+    ...capture,
+    completeness,
+    steps: capture.steps.map((step, index) =>
+      index === capture.steps.length - 1
+        ? { ...step, status: "cancelled", error: "Cancelled", completeness }
+        : step,
+    ),
+  });
+  const partial = {
+    kind: "browser-scenario-observation" as const,
+    capture: partialCapture,
+  };
+  const failure = new AnalysisCancelledError("capture_browser_scenario", {
+    partialObservation: partial,
+  });
+  const result = await captureBrowserScenario(
+    {
+      identity: () => ({ id: "fixture", name: "Fixture", version: "1" }),
+      captureScenario: async () => err(failure),
+    },
+    scenario,
+  );
+  expect(result).toEqual(err(failure));
+  expect(failure.partialObservation).toBe(partial);
+});
 
 it("converts a retained raw scenario capture into partial Evidence", async () => {
   const failure = new AnalysisCancelledError("capture_browser_scenario", {
